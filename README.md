@@ -1,1 +1,3 @@
 # logistic_regression_classification
+A logistic regression model was fit using baseline data and the predictors selected from first step for classification between patients with at least 5 new lesions and less than five lesions over 2 years. To jointly evaluate the prediction performance, bootstrap method was applied to create training dataset (80%) and test datasets (20%) using 10 times repeatedly sampling. Each time the performance of predictive model was accessed using leave-one-out cross validation. The final prediction performance (prediction accuracy, sensitivity, specificity and AUC) was calculated as average across 10 cross-validation rounds.
+
