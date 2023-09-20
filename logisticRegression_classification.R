@@ -8,6 +8,7 @@ library(pROC)
 library(plyr) 
 library(tibble)
 library(caret)
+library(boot) # calculate confidence interval for sensitivity, specificity for 10-round cross validation
 
 ############################################################################
 ############### function for predictive models: logistic regression ########
@@ -88,12 +89,38 @@ predict.crossvalidation<-function(exprssData,n,x){
     write(print("\n"),file=outputfile,append=TRUE)
   }
   # overall prediction accuracy for 10 cross-validation rounds
+  # calculate CI for prediction accuracy, sensitivity and specifity across 10-round cross validation
+  # Define a function to compute the mean of a sample
+  mean_fun <- function(data, indices) {
+    return(mean(data[indices]))
+  }
+  # prediction accuracy
   pred.accuracy.mean<-mean(unlist(pred.accracy.all))
-  sensitivity.mean<-mean(unlist(sensitivity.all))
-  specificity.mean<-mean(unlist(specificity.all))
   write(sprintf("overall predict accuracy:  %f",pred.accuracy.mean),file=outputfile,append=TRUE)
+  # Perform a bootstrap analysis on the 'prediction accuracy' 
+  boot_result_accuracy <- boot(data = unlist(pred.accracy.all), statistic = mean_fun, R = 1000)
+  # Calculate the 95% confidence interval
+  boot_conf_int_accuracy <- boot.ci( boot_result_accuracy, conf = 0.95, type = "perc")
+  write(sprintf("CI_prediction_accuracy %s",format(boot_conf_int_accuracy$percent[,c(4,5)])),file=outputfile,append=TRUE)
+  write(print("\n"),file=outputfile,append=TRUE)
+  # prediction sensitivity
+  sensitivity.mean<-mean(unlist(sensitivity.all))
   write(sprintf("overall sensitivity:  %f",sensitivity.mean),file=outputfile,append=TRUE)
+  # Perform a bootstrap analysis on the 'sensitivity' 
+  boot_result_sensitivity <- boot(data =unlist(sensitivity.all), statistic = mean_fun, R = 1000)
+  # Calculate the 95% confidence interval
+  boot_conf_int_sen <- boot.ci(boot_result_sensitivity, conf = 0.95, type = "perc")
+  write(sprintf("CI_sensitivity %s",format(boot_conf_int_sen$percent[,c(4,5)])),file=outputfile,append=TRUE)
+  write(print("\n"),file=outputfile,append=TRUE)
+  # prediction specificity
+  specificity.mean<-mean(unlist(specificity.all))
   write(sprintf("overall specificity:  %f",specificity.mean),file=outputfile,append=TRUE)
+  # Perform a bootstrap analysis on the 'specificity' 
+  boot_result_specificity <- boot(data = unlist(specificity.all), statistic = mean_fun, R = 1000)
+  # Calculate the 95% confidence interval
+  boot_conf_int_spec <- boot.ci( boot_result_specificity, conf = 0.95, type = "perc")
+  write(sprintf("CI_specificity %s",format(boot_conf_int_spec$percent[,c(4,5)])),file=outputfile,append=TRUE)
+  write(print("\n"),file=outputfile,append=TRUE)
   # ROC analysis
   # response is the real class of observation, pred is the predict probablity
   response.pred.ROC<-data.frame(PID=testsample.PID.all,response=testsample.response.all,pred=glm.probes.all)
